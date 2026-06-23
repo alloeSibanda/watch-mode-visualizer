@@ -1,4 +1,4 @@
-# watch-mod-visualizer
+# watch-mode-visualizer
 
 > Interactive web app for the watch modding community — mix and match cases, dials, chapter rings, and hands in real time, with an AI-assisted pipeline that turns a messy smartphone photo of a real part into a clean, transparent layer ready to drop on the canvas.
 
