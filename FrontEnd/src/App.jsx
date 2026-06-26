@@ -1,8 +1,24 @@
 import React, { useState } from 'react';
 
 function App() {
-  // State to test dynamic dial scaling logic later
-  const [dialSize, setDialSize] = useState('28.5');
+  // Master state tracking selected components
+  const [dialSize, setDialSize] = useState('28.5'); // '28.5' or '30.5'
+  const [currentDial, setCurrentDial] = useState('black'); // 'black' or 'blue'
+
+  // Sizing calibration configuration constants
+  const BENCH_SIZE = 450; // The fixed square width of our workspace viewport in pixels
+  
+  // Dynamic scale calculation based on real physical proportions
+  // Case diameter context: 42mm visual boundary maps to 100% width of the bench
+  const dialWidthPx = dialSize === '30.5' 
+    ? (30.5 / 42) * BENCH_SIZE  // ~326.7px for Large dial profile
+    : (28.5 / 42) * BENCH_SIZE; // ~305.3px for Standard dial profile
+
+  // Handler for dial configuration selection updates
+  const handleDialToggle = (size, type) => {
+    setDialSize(size);
+    setCurrentDial(type);
+  };
 
   return (
     <div style={{ backgroundColor: '#121212', color: '#ffffff', minHeight: '100vh', padding: '40px', fontFamily: 'sans-serif' }}>
@@ -10,134 +26,136 @@ function App() {
       {/* Header */}
       <header style={{ borderBottom: '1px solid #333', paddingBottom: '15px', marginBottom: '30px' }}>
         <h1 style={{ margin: 0, fontSize: '24px', letterSpacing: '0.5px' }}>watch-mod-visualizer</h1>
-        <p style={{ color: '#888', margin: '5px 0 0 0', fontSize: '14px' }}>Phase 1.2 — Optical Layer Stacking Engine</p>
+        <p style={{ color: '#888', margin: '5px 0 0 0', fontSize: '14px' }}>Phase 1.4 — Dynamic Asset Scale Calibration</p>
       </header>
 
-      {/* Main Workspace Layout */}
+      {/* Workspace Grid Layout */}
       <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
         
-        {/* Left Column: Interactive Watch Bench */}
+        {/* Left Column: Interactive Watch Assembly Bench */}
         <div style={{ 
           position: 'relative', 
-          width: '450px', 
-          height: '450px', 
-          backgroundColor: '#1a1a1a', 
+          width: `${BENCH_SIZE}px`, 
+          height: `${BENCH_SIZE}px`, 
+          backgroundColor: '#171717', 
           borderRadius: '8px', 
           border: '1px solid #2d2d2d',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+          overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.6)'
         }}>
           
-          {/* LAYER 1: WATCH CASE (Base Layer) */}
-          <div style={{
-            position: 'absolute',
-            width: '400px',
-            height: '400px',
-            borderRadius: '50%',
-            border: '4px solid #555',
-            backgroundColor: '#262626',
-            zIndex: 10,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <span style={{ position: 'absolute', top: '15px', color: '#555', fontSize: '11px', fontWeight: 'bold' }}>CASE (42mm)</span>
-            
-            {/* LAYER 2: CHAPTER RING footprint */}
-            <div style={{
+          {/* LAYER 1: WATCH CASE (Base Layer - Fixed 100% Frame Scale) */}
+          <img 
+            src="/assets/parts/case_sub_42mm.svg" 
+            alt="Watch Case"
+            style={{
               position: 'absolute',
-              width: '320px',
-              height: '320px',
-              borderRadius: '50%',
-              border: '2px dashed #ffcc00',
-              zIndex: 20,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              zIndex: 10,
+              pointerEvents: 'none'
+            }}
+          />
 
-              {/* LAYER 3: THE DIAL FOOTPRINT (Dynamic sizing based on state) */}
-              <div style={{
-                position: 'absolute',
-                // Proportional math: 30.5mm uses 290px footprint, 28.5mm uses 265px footprint
-                width: dialSize === '30.5' ? '290px' : '265px',
-                height: dialSize === '30.5' ? '290px' : '265px',
-                borderRadius: '50%',
-                backgroundColor: dialSize === '30.5' ? 'rgba(0, 102, 204, 0.4)' : 'rgba(0, 204, 102, 0.4)',
-                border: dialSize === '30.5' ? '2px solid #0066cc' : '2px solid #00cc66',
-                zIndex: 30,
-                transition: 'all 0.2s ease-in-out',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <span style={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}>DIAL ({dialSize}mm)</span>
-              </div>
+          {/* LAYER 2: THE DIAL (Dynamic Sizing Context Applied From Proportional Calculations) */}
+          <img 
+            src={currentDial === 'black' ? '/assets/parts/dial_285mm_black.svg' : '/assets/parts/dial_305mm_blue.svg'} 
+            alt="Watch Dial"
+            style={{
+              position: 'absolute',
+              // Dynamic centering offsets using bounding box dimensions
+              top: `${(BENCH_SIZE - dialWidthPx) / 2}px`,
+              left: `${(BENCH_SIZE - dialWidthPx) / 2}px`,
+              width: `${dialWidthPx}px`,
+              height: `${dialWidthPx}px`,
+              zIndex: 30,
+              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              pointerEvents: 'none'
+            }}
+          />
 
-              {/* LAYER 4: WATCH HANDS (Top Layer) */}
-              <div style={{
-                position: 'absolute',
-                width: '6px',
-                height: '130px',
-                backgroundColor: '#ff3333',
-                borderRadius: '3px',
-                zIndex: 40,
-                transform: 'translateY(-60px)' // Offsets center anchor point to act like a real indicator hand
-              }} />
-              <div style={{ position: 'absolute', width: '12px', height: '12px', backgroundColor: '#fff', borderRadius: '50%', zIndex: 41 }} />
+          {/* LAYER 3: WATCH HANDS (Top Layer - Fixed 100% Frame Scale matching Case pinions) */}
+          <img 
+            src="/assets/parts/hands_mercedes_silver.svg" 
+            alt="Watch Hands"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              zIndex: 40,
+              pointerEvents: 'none'
+            }}
+          />
 
-            </div>
-          </div>
         </div>
 
-        {/* Right Column: Control Dashboard Blueprint */}
-        <div style={{ flex: '1', minWidth: '300px', backgroundColor: '#1a1a1a', padding: '25px', borderRadius: '8px', border: '1px solid #2d2d2d' }}>
-          <h3 style={{ marginTop: 0, borderBottom: '1px solid #333', paddingBottom: '10px' }}>Component Calibration</h3>
+        {/* Right Column: Control Panel Dashboard Panel */}
+        <div style={{ flex: '1', minWidth: '320px', backgroundColor: '#1a1a1a', padding: '25px', borderRadius: '8px', border: '1px solid #2d2d2d' }}>
+          <h3 style={{ marginTop: 0, borderBottom: '1px solid #333', paddingBottom: '10px', fontSize: '18px' }}>Parts Inventory Explorer</h3>
           
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '10px', color: '#aaa', fontSize: '14px' }}>Select Dial Diameter Standard:</label>
-            <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ marginBottom: '25px' }}>
+            <label style={{ display: 'block', marginBottom: '12px', color: '#aaa', fontSize: '14px' }}>Select Modular Dial Assembly:</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              
+              {/* Option A: Standard 28.5mm Dial option */}
               <button 
-                onClick={() => setDialSize('28.5')}
+                onClick={() => handleDialToggle('28.5', 'black')}
                 style={{
-                  flex: 1,
-                  padding: '10px',
-                  backgroundColor: dialSize === '28.5' ? '#00cc66' : '#2d2d2d',
-                  color: dialSize === '28.5' ? '#000' : '#fff',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
-                }}
-              >
-                28.5 mm (Standard)
-              </button>
-              <button 
-                onClick={() => setDialSize('30.5')}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  backgroundColor: dialSize === '30.5' ? '#0066cc' : '#2d2d2d',
+                  padding: '12px 16px',
+                  backgroundColor: currentDial === 'black' ? '#262626' : '#1e1e1e',
                   color: '#fff',
-                  border: 'none',
-                  borderRadius: '4px',
+                  border: currentDial === 'black' ? '2px solid #00cc66' : '1px solid #333',
+                  borderRadius: '6px',
                   cursor: 'pointer',
-                  fontWeight: 'bold'
+                  textAlign: 'left',
+                  display: 'flex',
+                  justifyContent: 'between',
+                  alignItems: 'center'
                 }}
               >
-                30.5 mm (Large)
+                <div style={{ flexGrow: 1 }}>
+                  <div style={{ fontWeight: 'bold' }}>OEM Style Matte Black Dial</div>
+                  <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>Diameter: 28.5 mm (Standard)</div>
+                </div>
+                {currentDial === 'black' && <span style={{ color: '#00cc66', fontWeight: 'bold' }}>✓ ACTIVE</span>}
               </button>
+
+              {/* Option B: Larger 30.5mm Dial option */}
+              <button 
+                onClick={() => handleDialToggle('30.5', 'blue')}
+                style={{
+                  padding: '12px 16px',
+                  backgroundColor: currentDial === 'blue' ? '#262626' : '#1e1e1e',
+                  color: '#fff',
+                  border: currentDial === 'blue' ? '2px solid #0066cc' : '1px solid #333',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  justifyContent: 'between',
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{ flexGrow: 1 }}>
+                  <div style={{ fontWeight: 'bold' }}>Deep Marine Sunburst Dial</div>
+                  <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>Diameter: 30.5 mm (Large Layout)</div>
+                </div>
+                {currentDial === 'blue' && <span style={{ color: '#0066cc', fontWeight: 'bold' }}>✓ ACTIVE</span>}
+              </button>
+
             </div>
           </div>
 
-          <div style={{ padding: '15px', backgroundColor: '#222', borderRadius: '4px', fontSize: '13px', color: '#bbb', lineHeight: '1.5' }}>
-            <strong>DevOps Spec Verification:</strong><br />
-            • Layer 1 (Case): <code style={{color: '#ff66cc'}}>z-index: 10</code><br />
-            • Layer 2 (Chapter): <code style={{color: '#ff66cc'}}>z-index: 20</code><br />
-            • Layer 3 (Dial): <code style={{color: '#ff66cc'}}>z-index: 30</code><br />
-            • Layer 4 (Hands): <code style={{color: '#ff66cc'}}>z-index: 40</code>
+          {/* Infrastructure Metrics Readout */}
+          <div style={{ padding: '15px', backgroundColor: '#222', borderRadius: '6px', fontSize: '13px', color: '#bbb', lineHeight: '1.6' }}>
+            <strong>📐 Calculated Proportional Constraints:</strong><br />
+            • Active Render Width: <code style={{color: '#ff66cc'}}>{dialWidthPx.toFixed(1)}px</code><br />
+            • Aspect Ratio: <code style={{color: '#ff66cc'}}>1000 × 1000 (1:1 Unified Grid)</code><br />
+            • Center Pinion Target Alignment: <code style={{color: '#ff66cc'}}>X: 225.0px, Y: 225.0px</code>
           </div>
         </div>
 
