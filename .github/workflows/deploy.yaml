@@ -1,0 +1,48 @@
+name: Watch Mod Visualizer Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+# Permissions required to request JWT tokens via OIDC handshake matrix
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      
+      # 1. Pull latest source code from repository
+      - name: Checkout Repository Source
+        uses: actions/checkout@v4
+
+      # 2. Authenticate securely with AWS using OpenID Connect (OIDC)
+      - name: Authenticate with AWS via OIDC Trust
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/watch-mod-deployer-role
+          aws-region: ca-central-1
+          audience: sts.amazonaws.com
+
+      # 3. Provision Node runtime environment
+      - name: Initialize Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: './FrontEnd/package-lock.json'
+
+      # 4. Install dependencies and compile production payload
+      - name: Build React Application Payload
+        run: |
+          cd FrontEnd
+          npm install
+          npm run build
+
+      # 5. Continuous Delivery sync to Canadian S3 container
+      - name: Synchronize Production Build to Canadian S3
+        run: |
+          aws s3 sync ./FrontEnd/dist/ s3://watch-mod-visualizer-frontend-web --delete
