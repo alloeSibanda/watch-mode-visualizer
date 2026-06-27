@@ -31,7 +31,7 @@ jobs:
       - name: Initialize Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
           cache-dependency-path: './FrontEnd/package-lock.json'
 
@@ -42,7 +42,14 @@ jobs:
           npm install
           npm run build
 
-      # 5. Continuous Delivery sync to Canadian S3 container.
+      # 5. Continuous Delivery sync to Canadian S3 container
       - name: Synchronize Production Build to Canadian S3
         run: |
           aws s3 sync ./FrontEnd/dist/ s3://watch-mod-visualizer-frontend-web --delete
+
+      # 6. Automate Cache Invalidation loop on global Edge locations
+      - name: Invalidate CloudFront CDN Cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
