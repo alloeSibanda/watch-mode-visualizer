@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect x="0" y="0" width="200" height="200" fill="none" opacity="0"/>
+
+  <g id="mercedes-hour-hand">
+    <path d="M 96,100 L 96,68 L 104,68 L 104,100 Z" fill="#e5e5e5" stroke="#a3a3a3" stroke-width="1.5"/>
+    
+    <circle cx="100" cy="56" r="13" fill="#e5e5e5" stroke="#a3a3a3" stroke-width="1.5"/>
+    
+    <line x1="100" y1="56" x2="100" y2="43" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+    <line x1="100" y1="56" x2="111" y2="63" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+    <line x1="100" y1="56" x2="89" y2="63" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+    
+    <circle cx="100" cy="100" r="11" fill="#e5e5e5" stroke="#a3a3a3" stroke-width="1.5"/>
+    <circle cx="100" cy="100" r="4" fill="#171717"/>
+  </g>
+</svg>
