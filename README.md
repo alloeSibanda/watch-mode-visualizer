@@ -14,7 +14,7 @@ The differentiator is the upload pipeline: instead of only offering a fixed libr
 
 ## Why this project
 
-Watch modding is a personal hobby of mine — I own a fair collection of custom-built watches and have spent a lot of time mixing and matching parts by hand, so this project scratches my own itch as much as anyone else's.
+Watch modding is a personal hobby of mine — I own a fair collection of custom-built watches and have spent a lot of time mixing and matching parts by hand, so this project scratches my own itch as much as anyone else's..
 
 Professionally, I work in DevOps, and built this to pair infrastructure/CI-CD work with applied AI — specifically computer vision (OpenCV) and a lightweight segmentation model (MobileSAM) running behind a real deployment pipeline, not just a notebook demo. The repo is structured to show both halves: a production-shaped AWS pipeline, and a working ML inference path with real tradeoffs (model size vs. accuracy, sync vs. async processing, GPU cost).
 
