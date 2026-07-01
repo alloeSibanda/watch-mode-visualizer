@@ -221,7 +221,7 @@ export default function WorkspaceContainer() {
         <div className={`col-span-12 md:col-span-7 bg-neutral-900/40 border border-neutral-800/80 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 print:hidden ${isCanvasReady ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}>
           <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-bold tracking-tight text-neutral-200">The Roaming Razor Workshop</h2>
+              <h2 className="text-xl font-bold tracking-tight text-neutral-200">The Watch-Mode-Visualizer Workshop</h2>
               <p className="text-xs text-neutral-500 mt-1">Select and calibrate your modular movement inventory specs.</p>
             </div>
             
@@ -329,7 +329,7 @@ export default function WorkspaceContainer() {
             
             <div className="flex justify-between items-start print:block">
               <div>
-                <h3 className="text-lg font-bold text-neutral-100 tracking-tight print:text-black print:text-3xl">The Roaming Razor Sourcing Invoice</h3>
+                <h3 className="text-lg font-bold text-neutral-100 tracking-tight print:text-black print:text-3xl">The Watch-Mode-Visualizer Workshop Sourcing Invoice</h3>
                 <p className="text-xs text-neutral-500 mt-0.5 print:text-neutral-600">Verified Bench Bill of Materials Checklist</p>
               </div>
               <div className="text-right print:hidden">
