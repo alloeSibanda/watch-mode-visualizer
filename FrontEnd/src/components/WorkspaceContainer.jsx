@@ -9,7 +9,8 @@ export default function WorkspaceContainer() {
   // Track structural build selections
   const [activeConfig, setActiveConfig] = useState({
     case: 'None Selected',
-    dial: 'None Selected'
+    dial: 'None Selected',
+    hands: 'None Selected' // Decoupled: Starts empty
   });
 
   // Hands calibration degree matrices
@@ -72,7 +73,7 @@ export default function WorkspaceContainer() {
   }, [minuteAngle, fabricCanvas]);
 
   /**
-   * Safe Component Layer Stacker
+   * Safe Component Layer Stacker (Cases and Dials)
    */
   const loadWatchPart = (type, fileName, cleanName) => {
     if (!fabricCanvas) return;
@@ -97,7 +98,7 @@ export default function WorkspaceContainer() {
       currentLayerRef.current = img;
       fabricCanvas.centerObject(img);
 
-      // Programmatically sort the stacking layer order safely
+      // Programmatically sort layers safely
       if (type === 'case') {
         fabricCanvas.sendObjectToBack(img);
       } else {
@@ -107,7 +108,7 @@ export default function WorkspaceContainer() {
         }
       }
 
-      // Keep hands resting on the top visual field.
+      // Maintain hands positioning at absolute front on repaint
       if (hourHandRef.current) fabricCanvas.bringObjectToFront(hourHandRef.current);
       if (minuteHandRef.current) fabricCanvas.bringObjectToFront(minuteHandRef.current);
 
@@ -119,8 +120,7 @@ export default function WorkspaceContainer() {
   };
 
   /**
-   * Dynamic Independent Hand Loader
-   * Pulls dedicated standalone files and maps center-pivoting mechanics
+   * Dynamic On-Demand Hand Loader
    */
   const loadSingleHand = (type, fileName) => {
     if (!fabricCanvas) return;
@@ -133,8 +133,6 @@ export default function WorkspaceContainer() {
 
     fabric.Image.fromURL(`/assets/parts/${fileName}`).then((img) => {
       const canvasWidth = fabricCanvas.getWidth();
-      
-      // Use clean proportional bounding matching your isolated files
       const targetScale = type === 'hour' ? 0.44 : 0.54; 
 
       img.scaleToWidth(canvasWidth * targetScale);
@@ -154,19 +152,18 @@ export default function WorkspaceContainer() {
     }).catch(err => console.error(`Error loading isolated ${type} hand:`, err));
   };
 
-  // Bootstrap your decoupled handset assets cleanly upon boot
-  useEffect(() => {
-    if (fabricCanvas) {
-      loadSingleHand('hour', 'hands_hour.svg');
-      loadSingleHand('minute', 'hands_minute.svg');
-    }
-  }, [fabricCanvas]);
+  // Triggered via User Interaction Card
+  const handleHandsetSelection = () => {
+    loadSingleHand('hour', 'hands_hour.svg');
+    loadSingleHand('minute', 'hands_minute.svg');
+    setActiveConfig(prev => ({ ...prev, hands: 'Mercedes Hands (Silver Polish)' }));
+  };
 
   const isCanvasReady = fabricCanvas !== null;
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col relative overflow-x-hidden">
-      <main className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-6 p-4 md:p-8 max-w-7xl w-full mx-auto">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col relative overflow-x-hidden print:bg-white print:text-black">
+      <main className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-6 p-4 md:p-8 max-w-7xl w-full mx-auto print:hidden">
         
         {/* Left Column: Canvas Viewport */}
         <div className="col-span-12 md:col-span-5 flex flex-col justify-center">
@@ -195,7 +192,7 @@ export default function WorkspaceContainer() {
             </div>
             
             <div className="space-y-4">
-              {/* Cases */}
+              {/* Case Selection */}
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 block mb-2">Case Profiles</span>
                 <div 
@@ -206,7 +203,7 @@ export default function WorkspaceContainer() {
                 </div>
               </div>
 
-              {/* Dials */}
+              {/* Dial Selection */}
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 block mb-2">Dial Options</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -224,10 +221,24 @@ export default function WorkspaceContainer() {
                   </div>
                 </div>
               </div>
+
+              {/* Handset Selection Section (Decoupled on-demand milestone) */}
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 block mb-2">Handset Configurations</span>
+                <div 
+                  onClick={handleHandsetSelection}
+                  className={`p-4 bg-neutral-900 border rounded-xl cursor-pointer transition-all ${activeConfig.hands !== 'None Selected' ? 'border-amber-500 shadow-md shadow-amber-500/5 bg-neutral-800/50' : 'border-neutral-800 hover:border-neutral-700'}`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-neutral-300">Mercedes Polished Handset</span>
+                    <span className="text-[10px] bg-neutral-800 px-2 py-0.5 rounded text-neutral-400 font-mono">Silver</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Hand Alignment Controls */}
-            <div className="border-t border-neutral-800/60 pt-4 space-y-4">
+            {/* Hand Alignment Calibration Sliders */}
+            <div className={`border-t border-neutral-800/60 pt-4 space-y-4 transition-opacity duration-300 ${activeConfig.hands === 'None Selected' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
               <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block">Handset Alignment Calibration</span>
               <div className="space-y-3 bg-neutral-900/60 border border-neutral-800/50 rounded-xl p-4">
                 <div>
@@ -267,27 +278,27 @@ export default function WorkspaceContainer() {
 
       {/* Spec Sheet Build Data Modal Overlay Window */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
-            <h3 className="text-lg font-bold text-neutral-100 tracking-tight">Custom Build Specification Sheet</h3>
-            <p className="text-xs text-neutral-500 mt-1">Compiled bill of materials metadata checklist.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all print:absolute print:inset-0 print:bg-white print:text-black print:p-0">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative print:border-none print:shadow-none print:bg-white print:max-w-none">
+            <h3 className="text-lg font-bold text-neutral-100 tracking-tight print:text-black print:text-2xl">Custom Build Specification Sheet</h3>
+            <p className="text-xs text-neutral-500 mt-1 print:text-neutral-600">Compiled bill of materials metadata checklist.</p>
             
-            <div className="mt-6 space-y-4 border-y border-neutral-800 py-4 font-sans text-sm">
+            <div className="mt-6 space-y-4 border-y border-neutral-800 py-4 font-sans text-sm print:border-neutral-300">
               <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-xs uppercase tracking-wider">Case Reference</span>
-                <span className="text-neutral-200 font-medium text-right">{activeConfig.case}</span>
+                <span className="text-neutral-500 text-xs uppercase tracking-wider print:text-neutral-600">Case Reference</span>
+                <span className="text-neutral-200 font-medium text-right print:text-black">{activeConfig.case}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-xs uppercase tracking-wider">Dial Profile</span>
-                <span className="text-neutral-200 font-medium text-right">{activeConfig.dial}</span>
+                <span className="text-neutral-500 text-xs uppercase tracking-wider print:text-neutral-600">Dial Profile</span>
+                <span className="text-neutral-200 font-medium text-right print:text-black">{activeConfig.dial}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-xs uppercase tracking-wider">Handset Configuration</span>
-                <span className="text-neutral-200 font-medium text-right">Mercedes Handset (Silver Polish)</span>
+                <span className="text-neutral-500 text-xs uppercase tracking-wider print:text-neutral-600">Handset Configuration</span>
+                <span className="text-amber-500 font-medium text-right print:text-neutral-900">{activeConfig.hands}</span>
               </div>
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex gap-3 print:hidden">
               <button 
                 onClick={() => window.print()}
                 className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold py-3 rounded-xl transition-colors border border-neutral-700"
