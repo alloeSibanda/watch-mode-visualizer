@@ -73,7 +73,7 @@ Authentication to AWS uses OIDC federation rather than long-lived access keys st
 - [ ] AI upload pipeline (v1: manual-assist perspective + segmentation)
 - [ ] AI upload pipeline (v2: automated detection)
 - [ ] CI/CD pipeline (GitHub Actions → S3 + EC2 via OIDC)
-- [ ] Affiliate links / monetization layer
+- [ ] Affiliate links / monetization layer.
 
 ## Local development
 
