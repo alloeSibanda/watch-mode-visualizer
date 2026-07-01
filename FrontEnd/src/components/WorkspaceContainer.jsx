@@ -107,7 +107,7 @@ export default function WorkspaceContainer() {
         }
       }
 
-      // Keep hands resting on the top visual field
+      // Keep hands resting on the top visual field.
       if (hourHandRef.current) fabricCanvas.bringObjectToFront(hourHandRef.current);
       if (minuteHandRef.current) fabricCanvas.bringObjectToFront(minuteHandRef.current);
 
