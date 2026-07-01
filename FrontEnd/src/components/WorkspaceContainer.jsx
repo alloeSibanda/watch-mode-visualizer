@@ -94,32 +94,38 @@ export default function WorkspaceContainer() {
     }
   }, [minuteAngle, fabricCanvas]);
 
-  /**
+/**
    * Safe Multi-Layer Component Stacker
    */
   const loadWatchPart = (type, partObj) => {
     if (!fabricCanvas) return;
 
+    // Direct routing for all three foundational layers
     let currentLayerRef;
     if (type === 'case') currentLayerRef = caseLayerRef;
     else if (type === 'dial') currentLayerRef = dialLayerRef;
-    else if (type === 'movement') currentLayerRef = movementLayerRef;
+    else if (type === 'movement') currentLayerRef = movementLayerRef; // 👈 Fixed reference routing
 
-    if (currentLayerRef?.current) {
+    if (currentLayerRef && currentLayerRef.current) {
       fabricCanvas.remove(currentLayerRef.current);
       currentLayerRef.current = null;
     }
 
     fabric.Image.fromURL(`/assets/parts/${partObj.fileName}`).then((img) => {
       const canvasWidth = fabricCanvas.getWidth();
-      // Movements slice cleanly right under the dial face layout bounds
+      // Target scaling adjustments for structural layers
       const targetScale = type === 'case' ? 0.82 : type === 'movement' ? 0.54 : 0.56;
 
       img.scaleToWidth(canvasWidth * targetScale);
-      img.set({ selectable: false, hoverCursor: 'default' });
+      img.set({ 
+        selectable: false, 
+        hoverCursor: 'default' 
+      });
 
       fabricCanvas.add(img);
-      currentLayerRef.current = img;
+      if (currentLayerRef) {
+        currentLayerRef.current = img; // 👈 Ensure reference is assigned perfectly
+      }
       fabricCanvas.centerObject(img);
 
       // Enforce strict layer z-indexing pipeline order

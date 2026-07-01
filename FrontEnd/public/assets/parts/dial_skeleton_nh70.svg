@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect x="0" y="0" width="200" height="200" fill="none" opacity="0"/>
+  
+  <g id="skeleton-dial-rim">
+    <!-- Outer Dial Chapter Ring Frame with indices -->
+    <circle cx="100" cy="100" r="56" fill="none" stroke="#262626" stroke-width="6"/>
+    
+    <!-- 12, 3, 6, 9 Outer Marker Indicators -->
+    <rect x="98" y="44" width="4" height="6" fill="#fbbf24"/>
+    <rect x="150" y="98" width="6" height="4" fill="#ffffff"/>
+    <rect x="98" y="150" width="4" height="6" fill="#ffffff"/>
+    <rect x="44" y="98" width="6" height="4" fill="#ffffff"/>
+    
+    <!-- Structural Dial Bridges leaving the gears exposed underneath -->
+    <path d="M 94,47 L 94,80 L 106,80 L 106,47 Z" fill="#262626"/>
+    <path d="M 124,144 L 108,114 L 116,108 L 134,136 Z" fill="#262626"/>
+    
+    <!-- Open Heart Frame Outer Edge Bezel Ring -->
+    <circle cx="74" cy="100" r="17.5" fill="none" stroke="#262626" stroke-width="2.5"/>
+  </g>
+</svg>

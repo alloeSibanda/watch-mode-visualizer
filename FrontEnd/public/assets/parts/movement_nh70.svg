@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Invisible container symmetry spacer box -->
+  <rect x="0" y="0" width="200" height="200" fill="none" opacity="0"/>
+  
+  <g id="nh70-nickel-core">
+    <!-- Outer Main Movement Framework Ring -->
+    <circle cx="100" cy="100" r="54" fill="#1e1e1e" stroke="#d4d4d4" stroke-width="4.5"/>
+    <circle cx="100" cy="100" r="48" fill="none" stroke="#a3a3a3" stroke-width="1" stroke-dasharray="4 2"/>
+    
+    <!-- Open Heart Escapement Window Cutout Background -->
+    <circle cx="74" cy="100" r="16" fill="#121212" stroke="#737373" stroke-width="1.5"/>
+    
+    <!-- Exposed Balance Wheel (Gold Tone Accents) -->
+    <circle cx="74" cy="100" r="11" fill="none" stroke="#fbbf24" stroke-width="2.5"/>
+    <line x1="74" y1="89" x2="74" y2="111" stroke="#fbbf24" stroke-width="1.5"/>
+    <line x1="63" y1="100" x2="85" y2="100" stroke="#fbbf24" stroke-width="1.5"/>
+    
+    <!-- Mechanical Gear Train Wheel Inlays (Nickel Profile) -->
+    <circle cx="116" cy="84" r="14" fill="none" stroke="#d4d4d4" stroke-width="2"/>
+    <circle cx="116" cy="84" r="3" fill="#a3a3a3"/>
+    
+    <circle cx="120" cy="114" r="10" fill="none" stroke="#bcbcbc" stroke-width="1.5"/>
+    <circle cx="120" cy="114" r="2" fill="#a3a3a3"/>
+    
+    <!-- Red Ruby Pivot Jewels -->
+    <circle cx="102" cy="76" r="2.5" fill="#ef4444" opacity="0.95"/>
+    <circle cx="116" cy="84" r="1.5" fill="#dc2626" opacity="0.95"/>
+    
+    <!-- Center Pinion Core Alignment Hub -->
+    <circle cx="100" cy="100" r="9" fill="#d4d4d4" stroke="#737373" stroke-width="1"/>
+    <circle cx="100" cy="100" r="4" fill="#171717"/>
+  </g>
+</svg>
