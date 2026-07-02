@@ -48,6 +48,10 @@ export default function WorkspaceContainer() {
   const [hourAngle, setHourAngle] = useState(300); 
   const [minuteAngle, setMinuteAngle] = useState(24); 
 
+  // 🗄️ Relational History Local State Hooks
+  const [savedBuilds, setSavedBuilds] = useState([]);
+  const [isLoadingBuilds, setIsLoadingBuilds] = useState(false);
+
   const caseLayerRef = useRef(null);
   const dialLayerRef = useRef(null);
   const movementLayerRef = useRef(null);
@@ -94,6 +98,34 @@ export default function WorkspaceContainer() {
       fabricCanvas.renderAll();
     }
   }, [minuteAngle, fabricCanvas]);
+
+  // 📡 Real-Time Relational Data Fetching Stream
+  const fetchUserBuilds = async () => {
+    if (!currentUser) return;
+    setIsLoadingBuilds(true);
+    try {
+      const { data, error } = await supabase
+        .from('saved_builds')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSavedBuilds(data || []);
+    } catch (error) {
+      console.error('Error fetching workshop portfolio:', error);
+    } finally {
+      setIsLoadingBuilds(false);
+    }
+  };
+
+  // Sync historical records based on session transitions
+  useEffect(() => {
+    if (currentUser) {
+      fetchUserBuilds();
+    } else {
+      setSavedBuilds([]);
+    }
+  }, [currentUser]);
 
   const loadWatchPart = (type, partObj) => {
     if (!fabricCanvas) return;
@@ -211,11 +243,11 @@ export default function WorkspaceContainer() {
             build_name: buildName,
             case_id: activeConfig.case?.id || null,
             dial_id: activeConfig.dial?.id || null,
-            movement_id: activeConfig.movement?.id || null, // ✅ Correctly linked field
+            movement_id: activeConfig.movement?.id || null, 
             hands_id: activeConfig.hands?.id || null,
             hour_angle: hourAngle,
             minute_angle: minuteAngle,
-            total_cost: calculateTotalCost() // ✅ Aligned column binding name
+            total_cost: calculateTotalCost() 
           }
         ]);
 
@@ -223,6 +255,7 @@ export default function WorkspaceContainer() {
 
       alert(`"${buildName}" successfully committed to your live Relational Workbench portfolio!`);
       setBuildName('');
+      fetchUserBuilds(); // 🔄 Instantly pull fresh row layout updates down from Postgres
     } catch (error) {
       console.error('SQL database sync failure:', error);
       alert(`Database reject: ${error.message || 'Check Row-Level Security Rules'}`);
@@ -341,6 +374,61 @@ export default function WorkspaceContainer() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* 🗄️ Relational Workbench Build History Ledger Panel */}
+            <div className="border-t border-neutral-800/60 pt-4 mt-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-2">My Saved Workshop Portfolio</span>
+              
+              {!currentUser ? (
+                <p className="text-xs text-neutral-600 italic">Establish workbench connection to view configuration log.</p>
+              ) : isLoadingBuilds ? (
+                <p className="text-xs text-neutral-500 animate-pulse">Querying database schema archive...</p>
+              ) : savedBuilds.length === 0 ? (
+                <p className="text-xs text-neutral-600 italic">No custom builds committed to this workbench profile yet.</p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-800">
+                  {savedBuilds.map((build) => (
+                    <div key={build.id} className="bg-neutral-950 border border-neutral-800/80 rounded-xl p-2.5 flex justify-between items-center text-xs hover:border-neutral-700 transition-colors">
+                      <div>
+                        <span className="font-bold text-neutral-200 block">{build.build_name}</span>
+                        <span className="text-[10px] text-neutral-500 block font-mono">
+                          {new Date(build.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono text-amber-500 font-bold block">${parseFloat(build.total_cost || 0).toFixed(2)}</span>
+                        <button 
+                          onClick={() => {
+                            // Map existing Postgres relations back to local object matrix configurations
+                            const remappedConfig = {
+                              case: PARTS_INVENTORY.cases.find(c => c.id === build.case_id) || null,
+                              dial: PARTS_INVENTORY.dials.find(d => d.id === build.dial_id) || null,
+                              movement: PARTS_INVENTORY.movements.find(m => m.id === build.movement_id) || null,
+                              hands: PARTS_INVENTORY.hands.find(h => h.id === build.hands_id) || null
+                            };
+                            
+                            setActiveConfig(remappedConfig);
+                            if (build.hour_angle !== undefined) setHourAngle(build.hour_angle);
+                            if (build.minute_angle !== undefined) setMinuteAngle(build.minute_angle);
+                            
+                            // Re-render matching canvas vector positions if parts are present
+                            if (remappedConfig.case) loadWatchPart('case', remappedConfig.case);
+                            if (remappedConfig.movement) loadWatchPart('movement', remappedConfig.movement);
+                            if (remappedConfig.dial) loadWatchPart('dial', remappedConfig.dial);
+                            if (remappedConfig.hands) loadHandset(remappedConfig.hands);
+                            
+                            alert(`Loaded configuration layout for "${build.build_name}" back onto the active assembly bench!`);
+                          }}
+                          className="text-[10px] uppercase font-extrabold text-amber-500/70 hover:text-amber-400 tracking-wider mt-0.5 block"
+                        >
+                          Load Specs ↗
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Hand Alignment Sliders */}
