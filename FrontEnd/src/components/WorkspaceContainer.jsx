@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../config/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-// 📂 Comprehensive Parts Inventory Manifest Matrix (Including Movements & Sourcing Data)
+// 📂 Comprehensive Parts Inventory Manifest Matrix
 const PARTS_INVENTORY = {
   cases: [
     { id: 'case_sub_42mm', fileName: 'case_sub_42mm.svg', name: '42mm Submariner Style Stainless Steel', price: 45.00, link: 'https://namokimods.com' },
@@ -22,36 +25,27 @@ const PARTS_INVENTORY = {
 };
 
 export default function WorkspaceContainer() {
+  const { currentUser, loginWithGoogle, logout } = useAuth(); // 🔐 Consume Global Auth State Matrix
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [fabricCanvas, setFabricCanvas] = useState(null);
-  const [isCanvasReady, setIsCanvasReady] = useState(false); // ⚡ Race-Condition Shield state
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Track complete structural build selections
-  const [activeConfig, setActiveConfig] = useState({
-    case: null,
-    dial: null,
-    movement: null,
-    hands: null
-  });
-
-  // UI Open Dropdown Matrix Tracking
+  const [activeConfig, setActiveConfig] = useState({ case: null, dial: null, movement: null, hands: null });
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [buildName, setBuildName] = useState('');
 
-  // Hands calibration degree states
   const [hourAngle, setHourAngle] = useState(300); 
   const [minuteAngle, setMinuteAngle] = useState(24); 
 
-  // Rigid Structural Canvas Layers
   const caseLayerRef = useRef(null);
   const dialLayerRef = useRef(null);
   const movementLayerRef = useRef(null);
   const hourHandRef = useRef(null);
   const minuteHandRef = useRef(null);
 
-  // Initialize Canvas Viewport
   useEffect(() => {
     if (!containerRef.current || !canvasRef.current) return;
 
@@ -63,7 +57,7 @@ export default function WorkspaceContainer() {
     });
 
     setFabricCanvas(initCanvas);
-    setIsCanvasReady(true); // 🛡️ Lift the Shield: Interaction is now safely unfrozen
+    setIsCanvasReady(true);
 
     const handleResize = () => {
       const currentWidth = containerRef.current?.clientWidth || 400;
@@ -79,7 +73,6 @@ export default function WorkspaceContainer() {
     };
   }, []);
 
-  // Real-time Slider Transform Binder Matrices
   useEffect(() => {
     if (hourHandRef.current && fabricCanvas) {
       hourHandRef.current.set({ angle: hourAngle });
@@ -94,60 +87,38 @@ export default function WorkspaceContainer() {
     }
   }, [minuteAngle, fabricCanvas]);
 
-/**
-   * Safe Multi-Layer Component Stacker
-   */
   const loadWatchPart = (type, partObj) => {
     if (!fabricCanvas) return;
+    let currentLayerRef = type === 'case' ? caseLayerRef : type === 'dial' ? dialLayerRef : movementLayerRef;
 
-    // Direct routing for all three foundational layers
-    let currentLayerRef;
-    if (type === 'case') currentLayerRef = caseLayerRef;
-    else if (type === 'dial') currentLayerRef = dialLayerRef;
-    else if (type === 'movement') currentLayerRef = movementLayerRef; // 👈 Fixed reference routing
-
-    if (currentLayerRef && currentLayerRef.current) {
+    if (currentLayerRef?.current) {
       fabricCanvas.remove(currentLayerRef.current);
       currentLayerRef.current = null;
     }
 
     fabric.Image.fromURL(`/assets/parts/${partObj.fileName}`).then((img) => {
       const canvasWidth = fabricCanvas.getWidth();
-      // Target scaling adjustments for structural layers
       const targetScale = type === 'case' ? 0.82 : type === 'movement' ? 0.54 : 0.56;
 
       img.scaleToWidth(canvasWidth * targetScale);
-      img.set({ 
-        selectable: false, 
-        hoverCursor: 'default' 
-      });
+      img.set({ selectable: false, hoverCursor: 'default' });
 
       fabricCanvas.add(img);
-      if (currentLayerRef) {
-        currentLayerRef.current = img; // 👈 Ensure reference is assigned perfectly
-      }
+      currentLayerRef.current = img;
       fabricCanvas.centerObject(img);
-
-      // Enforce strict layer z-indexing pipeline order
       sortCanvasLayers();
-
       fabricCanvas.calcOffset();
       fabricCanvas.renderAll();
 
       setActiveConfig(prev => ({ ...prev, [type]: partObj }));
       setOpenDropdown(null);
-    }).catch(err => console.error(`Failed layer loading asset sequence:`, err));
+    }).catch(err => console.error(`Asset render failure:`, err));
   };
 
-  /**
-   * On-Demand Dual Handet Engine
-   */
   const loadHandset = (handsetObj) => {
     if (!fabricCanvas) return;
-
     if (hourHandRef.current) fabricCanvas.remove(hourHandRef.current);
     if (minuteHandRef.current) fabricCanvas.remove(minuteHandRef.current);
-
     const canvasWidth = fabricCanvas.getWidth();
 
     fabric.Image.fromURL(`/assets/parts/${handsetObj.hourFile}`).then((hourImg) => {
@@ -175,60 +146,96 @@ export default function WorkspaceContainer() {
   };
 
   const sortCanvasLayers = () => {
-    // 1. Movement is the raw backplate engine baseline
     if (movementLayerRef.current) fabricCanvas.sendObjectToBack(movementLayerRef.current);
-    // 2. Case envelopes the background window
     if (caseLayerRef.current) fabricCanvas.sendObjectToBack(caseLayerRef.current);
-    // 3. Dial covers movement core plates
     if (dialLayerRef.current) {
       fabricCanvas.bringObjectToFront(dialLayerRef.current);
       if (hourHandRef.current) fabricCanvas.sendObjectToBack(dialLayerRef.current);
     }
-    // 4. Hand indicators always sit on top of everything
     if (hourHandRef.current) fabricCanvas.bringObjectToFront(hourHandRef.current);
     if (minuteHandRef.current) fabricCanvas.bringObjectToFront(minuteHandRef.current);
   };
 
-  // Calculate shopping cart total metrics dynamically
-  const calculateTotalCost = () => {
-    return Object.values(activeConfig).reduce((acc, curr) => acc + (curr?.price || 0), 0);
-  };
+  const calculateTotalCost = () => Object.values(activeConfig).reduce((acc, curr) => acc + (curr?.price || 0), 0);
 
-  const handleSaveBuildLocal = () => {
-    alert(`Build "${buildName || 'Custom Seiko Mod'}" saved locally! Milestone 2 will link this trigger directly to your live Firestore backend database.`);
+  // 📡 Live Asynchronous Firestore Integration Channel
+  const handleSaveBuildToCloud = async () => {
+    if (!buildName.trim()) {
+      alert('Please assign a distinct custom build name before pushing payload.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const buildPayload = {
+        name: buildName,
+        createdAt: serverTimestamp(),
+        userId: currentUser ? currentUser.uid : 'anonymous_artisan',
+        userEmail: currentUser ? currentUser.email : 'guest',
+        configuration: {
+          caseId: activeConfig.case?.id || null,
+          dialId: activeConfig.dial?.id || null,
+          movementId: activeConfig.movement?.id || null,
+          handsId: activeConfig.hands?.id || null,
+        },
+        calibration: { hourAngle, minuteAngle },
+        totalEstimatedCost: calculateTotalCost()
+      };
+
+      await addDoc(collection(db, 'saved_builds'), buildPayload);
+      alert(`"${buildName}" successfully committed to your live Cloud Workbench portfolio!`);
+      setBuildName('');
+    } catch (error) {
+      console.error('Cloud inventory synchronization engine failure:', error);
+      alert('Database reject: Check your Firestore rule definitions.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col relative overflow-x-hidden print:bg-white print:text-black">
       <main className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-6 p-4 md:p-8 max-w-7xl w-full mx-auto print:p-0 print:block">
         
-        {/* Left Column: Interactive Visual Frame Canvas */}
+        {/* Left Column: Canvas Framework */}
         <div className="col-span-12 md:col-span-5 flex flex-col justify-center print:hidden">
-          <div 
-            ref={containerRef} 
-            className="w-full aspect-square bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl relative"
-          >
+          <div ref={containerRef} className="w-full aspect-square bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl relative">
             <canvas ref={canvasRef} className="absolute inset-0" />
             {!isCanvasReady && (
               <div className="absolute inset-0 bg-neutral-900/90 backdrop-blur-md flex items-center justify-center text-xs text-neutral-400 uppercase tracking-widest">
-                Locking Canvas Memory Engine Layout Matrix...
+                Locking Canvas Memory Engine...
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Column: Interaction Control Center Sidebar */}
+        {/* Right Column: Interaction Controls */}
         <div className={`col-span-12 md:col-span-7 bg-neutral-900/40 border border-neutral-800/80 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 print:hidden ${isCanvasReady ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}>
           <div className="space-y-5">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-neutral-200">The Watch-Mode-Visualizer Workshop</h2>
-              <p className="text-xs text-neutral-500 mt-1">Select and calibrate your modular movement inventory specs.</p>
+            
+            {/* Dynamic Secure Identity Profile Header */}
+            <div className="flex justify-between items-center border-b border-neutral-800/80 pb-4">
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-neutral-200">The Roaming Razor Workshop</h2>
+                <p className="text-xs text-neutral-500 mt-1">Select and calibrate your modular movement inventory specs.</p>
+              </div>
+              <div>
+                {currentUser ? (
+                  <div className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-xl">
+                    <img src={currentUser.photoURL} alt="Profile" className="w-6 h-6 rounded-full border border-amber-500/30" />
+                    <span className="text-xs font-semibold text-neutral-300 hidden sm:inline">{currentUser.displayName.split(' ')[0]}</span>
+                    <button onClick={logout} className="text-[10px] uppercase font-bold text-neutral-500 hover:text-red-400 ml-1 transition-colors">Exit</button>
+                  </div>
+                ) : (
+                  <button onClick={loginWithGoogle} className="bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-neutral-950 font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all shadow-md">
+                    Connect Workbench
+                  </button>
+                )}
+              </div>
             </div>
             
-            {/* Dynamic Dropdown Control Grid */}
+            {/* Dropdowns Matrix */}
             <div className="space-y-3">
-              
-              {/* DROPDOWN: CASE PROFILE */}
+              {/* DROPDOWN: CASE */}
               <div className="relative">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">Casing Reference</span>
                 <button onClick={() => setOpenDropdown(openDropdown === 'case' ? null : 'case')} className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-3 text-left flex justify-between items-center text-sm font-medium hover:border-neutral-700">
@@ -244,7 +251,7 @@ export default function WorkspaceContainer() {
                 )}
               </div>
 
-              {/* DROPDOWN: AUTOMATIC MOVEMENT CORES (NH70/NH72 Expansion) */}
+              {/* DROPDOWN: MOVEMENT */}
               <div className="relative">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">Caliber Movement Core</span>
                 <button onClick={() => setOpenDropdown(openDropdown === 'movement' ? null : 'movement')} className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-3 text-left flex justify-between items-center text-sm font-medium hover:border-neutral-700">
@@ -260,7 +267,7 @@ export default function WorkspaceContainer() {
                 )}
               </div>
 
-              {/* DROPDOWN: DIAL DESIGNS (Skeleton Layout Expansion) */}
+              {/* DROPDOWN: DIAL */}
               <div className="relative">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">Dial Display Plate</span>
                 <button onClick={() => setOpenDropdown(openDropdown === 'dial' ? null : 'dial')} className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-3 text-left flex justify-between items-center text-sm font-medium hover:border-neutral-700">
@@ -276,7 +283,7 @@ export default function WorkspaceContainer() {
                 )}
               </div>
 
-              {/* DROPDOWN: HANDS SELECTION (Decoupled Pristine Start) */}
+              {/* DROPDOWN: HANDS */}
               <div className="relative">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">Indicator Handset Stack</span>
                 <button onClick={() => setOpenDropdown(openDropdown === 'hands' ? null : 'hands')} className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-3 text-left flex justify-between items-center text-sm font-medium hover:border-neutral-700">
@@ -291,10 +298,9 @@ export default function WorkspaceContainer() {
                   </div>
                 )}
               </div>
-
             </div>
 
-            {/* Hand Alignment Calibration Sliders */}
+            {/* Hand Alignment Sliders */}
             <div className={`border-t border-neutral-800/60 pt-3 space-y-3 transition-opacity duration-300 ${!activeConfig.hands ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
               <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">Handset Alignment Calibration</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-neutral-900/60 border border-neutral-800/50 rounded-xl p-3">
@@ -322,14 +328,14 @@ export default function WorkspaceContainer() {
         </div>
       </main>
 
-      {/* 📦 Option B Milestone: Obsidian Spec Sheet Modal Overlay */}
+      {/* Obsidian Spec Sheet Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md transition-all print:absolute print:inset-0 print:bg-white print:p-0">
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative print:border-none print:shadow-none print:bg-white print:max-w-none print:p-0">
             
             <div className="flex justify-between items-start print:block">
               <div>
-                <h3 className="text-lg font-bold text-neutral-100 tracking-tight print:text-black print:text-3xl">The Watch-Mode-Visualizer Workshop Sourcing Invoice</h3>
+                <h3 className="text-lg font-bold text-neutral-100 tracking-tight print:text-black print:text-3xl">The Roaming Razor Sourcing Invoice</h3>
                 <p className="text-xs text-neutral-500 mt-0.5 print:text-neutral-600">Verified Bench Bill of Materials Checklist</p>
               </div>
               <div className="text-right print:hidden">
@@ -338,13 +344,15 @@ export default function WorkspaceContainer() {
               </div>
             </div>
             
-            {/* Database Persistence Local State Input Channel */}
+            {/* Live Database Integration Interface Channels */}
             <div className="mt-4 flex gap-2 print:hidden">
               <input type="text" placeholder="Assign Custom Build Name..." value={buildName} onChange={(e) => setBuildName(e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-200 outline-none focus:border-amber-500 transition-colors" />
-              <button onClick={handleSaveBuildLocal} className="bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-neutral-950 font-bold text-xs px-4 rounded-xl transition-all">Save Build</button>
+              <button onClick={handleSaveBuildToCloud} disabled={isSaving} className="bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-neutral-950 font-bold text-xs px-4 rounded-xl transition-all disabled:opacity-40">
+                {isSaving ? 'Saving...' : 'Save Build'}
+              </button>
             </div>
 
-            {/* Scraped State Matrix Parts List Layout */}
+            {/* Parts Checklist Layout */}
             <div className="mt-5 border-t border-neutral-800 pt-4 space-y-4 print:border-neutral-300 print:mt-8">
               {['case', 'movement', 'dial', 'hands'].map((layerKey) => {
                 const selectedPart = activeConfig[layerKey];
@@ -365,13 +373,11 @@ export default function WorkspaceContainer() {
               })}
             </div>
 
-            {/* Sourcing Invoice Summary Core Totals Panel */}
             <div className="mt-4 pt-4 border-t border-neutral-800 flex justify-between items-center bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60 print:bg-neutral-100 print:border-neutral-300 print:mt-6">
               <span className="text-xs font-bold uppercase tracking-wider text-neutral-400 print:text-neutral-700">Total Bench Procurement Cost</span>
               <span className="text-lg font-bold font-mono text-amber-500 print:text-black">${calculateTotalCost().toFixed(2)}</span>
             </div>
 
-            {/* Modal Control Layer */}
             <div className="mt-5 flex gap-3 print:hidden">
               <button onClick={() => window.print()} className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold py-3 rounded-xl transition-all border border-neutral-700">Print Workbench Spec</button>
               <button onClick={() => setIsModalOpen(false)} className="flex-1 bg-amber-500 hover:bg-amber-600 text-neutral-950 text-xs font-bold py-3 rounded-xl transition-all">Return to Workshop</button>
