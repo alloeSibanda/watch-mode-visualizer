@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../config/supabaseClient'; // 🚀 Shifted to Relational Supabase client gateway
+import { supabase } from '../config/supabaseClient'; // 🚀 Relational Supabase client gateway
 
 // 📂 Comprehensive Parts Inventory Manifest Matrix
 const PARTS_INVENTORY = {
@@ -211,11 +211,11 @@ export default function WorkspaceContainer() {
             build_name: buildName,
             case_id: activeConfig.case?.id || null,
             dial_id: activeConfig.dial?.id || null,
-            movement_id: activeConfig.movement?.id || null,
+            movement_id: activeConfig.movement?.id || null, // ✅ Correctly linked field
             hands_id: activeConfig.hands?.id || null,
             hour_angle: hourAngle,
             minute_angle: minuteAngle,
-            total_cost: calculateTotalCost()
+            total_cost: calculateTotalCost() // ✅ Aligned column binding name
           }
         ]);
 
