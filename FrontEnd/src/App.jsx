@@ -1,11 +1,12 @@
 import React from 'react';
+import { AuthProvider } from './context/AuthContext';
 import WorkspaceContainer from './components/WorkspaceContainer';
 
 function App() {
   return (
-    <div className="w-full min-h-screen bg-neutral-950">
+    <AuthProvider>
       <WorkspaceContainer />
-    </div>
+    </AuthProvider>
   );
 }
 
