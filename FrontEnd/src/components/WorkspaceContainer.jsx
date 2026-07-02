@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../config/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '../config/supabaseClient'; // 🚀 Shifted to Relational Supabase client gateway
 
 // 📂 Comprehensive Parts Inventory Manifest Matrix
 const PARTS_INVENTORY = {
@@ -185,41 +184,48 @@ export default function WorkspaceContainer() {
       setAuthPassword('');
       setAuthName('');
     } catch (err) {
-      setAuthError(err.message.replace("Firebase: ", ""));
+      setAuthError(err.message || 'Authentication lifecycle exception.');
     } finally {
       setAuthLoading(false);
     }
   };
 
-  // 📡 Live Asynchronous Firestore Integration Channel
+  // 📡 Live Asynchronous Relational Supabase Integration Channel
   const handleSaveBuildToCloud = async () => {
     if (!buildName.trim()) {
       alert('Please assign a distinct custom build name before pushing payload.');
       return;
     }
+    if (!currentUser) {
+      alert('Unauthorized profile: Please establish a workspace session connection first.');
+      return;
+    }
     setIsSaving(true);
     try {
-      const buildPayload = {
-        name: buildName,
-        createdAt: serverTimestamp(),
-        userId: currentUser ? currentUser.uid : 'anonymous_artisan',
-        userEmail: currentUser ? currentUser.email : 'guest',
-        configuration: {
-          caseId: activeConfig.case?.id || null,
-          dialId: activeConfig.dial?.id || null,
-          movementId: activeConfig.movement?.id || null,
-          handsId: activeConfig.hands?.id || null,
-        },
-        calibration: { hourAngle, minuteAngle },
-        totalEstimatedCost: calculateTotalCost()
-      };
+      const { data, error } = await supabase
+        .from('saved_builds')
+        .insert([
+          {
+            user_id: currentUser.id,
+            user_email: currentUser.email,
+            build_name: buildName,
+            case_id: activeConfig.case?.id || null,
+            dial_id: activeConfig.dial?.id || null,
+            movement_id: activeConfig.movement?.id || null,
+            hands_id: activeConfig.hands?.id || null,
+            hour_angle: hourAngle,
+            minute_angle: minuteAngle,
+            total_cost: calculateTotalCost()
+          }
+        ]);
 
-      await addDoc(collection(db, 'saved_builds'), buildPayload);
-      alert(`"${buildName}" successfully committed to your live Cloud Workbench portfolio!`);
+      if (error) throw error;
+
+      alert(`"${buildName}" successfully committed to your live Relational Workbench portfolio!`);
       setBuildName('');
     } catch (error) {
-      console.error('Cloud inventory synchronization engine failure:', error);
-      alert('Database reject: Check your Firestore rule definitions.');
+      console.error('SQL database sync failure:', error);
+      alert(`Database reject: ${error.message || 'Check Row-Level Security Rules'}`);
     } finally {
       setIsSaving(false);
     }
@@ -255,10 +261,10 @@ export default function WorkspaceContainer() {
                 {currentUser ? (
                   <div className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-xl">
                     <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-[10px] font-bold text-amber-500 uppercase">
-                      {currentUser.displayName ? currentUser.displayName[0] : currentUser.email[0]}
+                      {currentUser.user_metadata?.display_name ? currentUser.user_metadata.display_name[0] : currentUser.email[0]}
                     </div>
                     <span className="text-xs font-semibold text-neutral-300 hidden sm:inline">
-                      {currentUser.displayName || 'Artisan'}
+                      {currentUser.user_metadata?.display_name || 'Artisan'}
                     </span>
                     <button onClick={logout} className="text-[10px] uppercase font-bold text-neutral-500 hover:text-red-400 ml-1 transition-colors">Exit</button>
                   </div>
