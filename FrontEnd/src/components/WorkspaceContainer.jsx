@@ -25,7 +25,7 @@ const PARTS_INVENTORY = {
 };
 
 export default function WorkspaceContainer() {
-  const { currentUser, loginWithGoogle, logout } = useAuth(); // 🔐 Consume Global Auth State Matrix
+  const { currentUser, loginWithEmail, registerWithEmail, logout } = useAuth(); // 🔐 Consume Native Email Auth Methods
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [fabricCanvas, setFabricCanvas] = useState(null);
@@ -36,6 +36,15 @@ export default function WorkspaceContainer() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [buildName, setBuildName] = useState('');
+
+  // 🔐 Authentication Modal & Form States
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   const [hourAngle, setHourAngle] = useState(300); 
   const [minuteAngle, setMinuteAngle] = useState(24); 
@@ -158,6 +167,30 @@ export default function WorkspaceContainer() {
 
   const calculateTotalCost = () => Object.values(activeConfig).reduce((acc, curr) => acc + (curr?.price || 0), 0);
 
+  // 🔐 Form Submission Manager for Email Accounts
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+
+    try {
+      if (isSignUp) {
+        if (!authName.trim()) throw new Error("Please specify an artisan display name.");
+        await registerWithEmail(authEmail, authPassword, authName);
+      } else {
+        await loginWithEmail(authEmail, authPassword);
+      }
+      setIsAuthModalOpen(false);
+      setAuthEmail('');
+      setAuthPassword('');
+      setAuthName('');
+    } catch (err) {
+      setAuthError(err.message.replace("Firebase: ", ""));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   // 📡 Live Asynchronous Firestore Integration Channel
   const handleSaveBuildToCloud = async () => {
     if (!buildName.trim()) {
@@ -221,12 +254,16 @@ export default function WorkspaceContainer() {
               <div>
                 {currentUser ? (
                   <div className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-xl">
-                    <img src={currentUser.photoURL} alt="Profile" className="w-6 h-6 rounded-full border border-amber-500/30" />
-                    <span className="text-xs font-semibold text-neutral-300 hidden sm:inline">{currentUser.displayName.split(' ')[0]}</span>
+                    <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-[10px] font-bold text-amber-500 uppercase">
+                      {currentUser.displayName ? currentUser.displayName[0] : currentUser.email[0]}
+                    </div>
+                    <span className="text-xs font-semibold text-neutral-300 hidden sm:inline">
+                      {currentUser.displayName || 'Artisan'}
+                    </span>
                     <button onClick={logout} className="text-[10px] uppercase font-bold text-neutral-500 hover:text-red-400 ml-1 transition-colors">Exit</button>
                   </div>
                 ) : (
-                  <button onClick={loginWithGoogle} className="bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-neutral-950 font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all shadow-md">
+                  <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-neutral-950 font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all shadow-md">
                     Connect Workbench
                   </button>
                 )}
@@ -327,6 +364,49 @@ export default function WorkspaceContainer() {
           </button>
         </div>
       </main>
+
+      {/* 🔐 Obsidian Authentication Overlay Modal */}
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative">
+            <button onClick={() => { setIsAuthModalOpen(false); setAuthError(''); }} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-300 text-sm font-bold">✕</button>
+            
+            <h3 className="text-lg font-bold text-neutral-100 tracking-tight">
+              {isSignUp ? 'Create Artisan Account' : 'Connect Your Workbench'}
+            </h3>
+            <p className="text-xs text-neutral-500 mt-0.5">Use your preferred email account to sync specs.</p>
+
+            <form onSubmit={handleAuthSubmit} className="mt-4 space-y-3">
+              {isSignUp && (
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">Artisan Name</label>
+                  <input type="text" required value={authName} onChange={(e) => setAuthName(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-neutral-200 outline-none focus:border-amber-500" placeholder="e.g., T. Sibanda" />
+                </div>
+              )}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">Email Address</label>
+                <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-neutral-200 outline-none focus:border-amber-500" placeholder="artisan@domain.com" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">Password</label>
+                <input type="password" required value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-neutral-200 outline-none focus:border-amber-500" placeholder="••••••••" />
+              </div>
+
+              {authError && <p className="text-xs text-red-400 font-medium mt-1">{authError}</p>}
+
+              <button type="submit" disabled={authLoading} className="w-full bg-amber-500 hover:bg-amber-600 text-neutral-950 font-bold text-xs uppercase py-3 rounded-xl tracking-wider transition-colors mt-2 disabled:opacity-50">
+                {authLoading ? 'Verifying...' : isSignUp ? 'Register Portfolio' : 'Authorize Entrance'}
+              </button>
+            </form>
+
+            <div className="mt-4 text-center border-t border-neutral-800/60 pt-3">
+              <button onClick={() => { setIsSignUp(!isSignUp); setAuthError(''); }} className="text-xs text-amber-500/80 hover:text-amber-500 hover:underline">
+                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Register here"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Obsidian Spec Sheet Modal */}
       {isModalOpen && (

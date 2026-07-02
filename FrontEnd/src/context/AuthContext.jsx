@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, googleProvider } from '../config/firebase';
-import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../config/firebase';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  updateProfile
+} from 'firebase/auth';
 
 const AuthContext = createContext(null);
 
@@ -8,12 +14,26 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Trigger Google OAuth Pop-up Window
-  const loginWithGoogle = async () => {
+  // 🆕 Register a brand new user account
+  const registerWithEmail = async (email, password, displayName) => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Attach a display name to their profile
+      await updateProfile(userCredential.user, { displayName });
+      return userCredential.user;
     } catch (error) {
-      console.error("Authentication popup failure:", error);
+      console.error("Registration engine failure:", error);
+      throw error;
+    }
+  };
+
+  // 🆕 Sign in an existing user
+  const loginWithEmail = async (email, password) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      return userCredential.user;
+    } catch (error) {
+      console.error("Login engine failure:", error);
       throw error;
     }
   };
@@ -21,7 +41,7 @@ export function AuthProvider({ children }) {
   // Terminate Session
   const logout = () => signOut(auth);
 
-  // Monitor persistent session state changes from Firebase
+  // Monitor persistent session state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -31,13 +51,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ currentUser, registerWithEmail, loginWithEmail, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );
 }
 
-// Custom Hook for effortless ingestion across the sidebar UI
 export function useAuth() {
   return useContext(AuthContext);
 }
