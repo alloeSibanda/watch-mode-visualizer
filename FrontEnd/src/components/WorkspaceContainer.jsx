@@ -287,7 +287,7 @@ export default function WorkspaceContainer() {
             {/* Dynamic Secure Identity Profile Header */}
             <div className="flex justify-between items-center border-b border-neutral-800/80 pb-4">
               <div>
-                <h2 className="text-xl font-bold tracking-tight text-neutral-200">The Roaming Razor Workshop</h2>
+                <h2 className="text-xl font-bold tracking-tight text-neutral-200">Watch-Mode-Visualizer Workshop</h2>
                 <p className="text-xs text-neutral-500 mt-1">Select and calibrate your modular movement inventory specs.</p>
               </div>
               <div>
@@ -321,7 +321,10 @@ export default function WorkspaceContainer() {
                 {openDropdown === 'case' && (
                   <div className="absolute z-30 w-full mt-1 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl overflow-hidden">
                     {PARTS_INVENTORY.cases.map(c => (
-                      <div key={c.id} onClick={() => loadWatchPart('case', c)} className="p-3 hover:bg-neutral-800/60 text-sm cursor-pointer flex justify-between">{c.name} <span className="text-neutral-500">${c.price}</span></div>
+                      <div key={c.id} onClick={() => loadWatchPart('case', c)} className="p-3 hover:bg-neutral-800/60 text-sm cursor-pointer flex justify-between border-b border-neutral-800/40 last:border-none">
+                        <span>{c.name}</span>
+                        <span className="text-neutral-500">${c.price.toFixed(2)}</span>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -337,7 +340,10 @@ export default function WorkspaceContainer() {
                 {openDropdown === 'movement' && (
                   <div className="absolute z-30 w-full mt-1 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl overflow-hidden">
                     {PARTS_INVENTORY.movements.map(m => (
-                      <div key={m.id} onClick={() => loadWatchPart('movement', m)} className="p-3 hover:bg-neutral-800/60 text-sm cursor-pointer flex justify-between">{m.name} <span className="text-neutral-500">${m.price}</span></div>
+                      <div key={m.id} onClick={() => loadWatchPart('movement', m)} className="p-3 hover:bg-neutral-800/60 text-sm cursor-pointer flex justify-between border-b border-neutral-800/40 last:border-none">
+                        <span>{m.name}</span>
+                        <span className="text-neutral-500">${m.price.toFixed(2)}</span>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -353,7 +359,10 @@ export default function WorkspaceContainer() {
                 {openDropdown === 'dial' && (
                   <div className="absolute z-30 w-full mt-1 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl overflow-hidden">
                     {PARTS_INVENTORY.dials.map(d => (
-                      <div key={d.id} onClick={() => loadWatchPart('dial', d)} className="p-3 hover:bg-neutral-800/60 text-sm cursor-pointer flex justify-between">{d.name} <span className="text-neutral-500">${d.price}</span></div>
+                      <div key={d.id} onClick={() => loadWatchPart('dial', d)} className="p-3 hover:bg-neutral-800/60 text-sm cursor-pointer flex justify-between border-b border-neutral-800/40 last:border-none">
+                        <span>{d.name}</span>
+                        <span className="text-neutral-500">${d.price.toFixed(2)}</span>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -369,7 +378,10 @@ export default function WorkspaceContainer() {
                 {openDropdown === 'hands' && (
                   <div className="absolute z-30 w-full mt-1 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl overflow-hidden">
                     {PARTS_INVENTORY.hands.map(h => (
-                      <div key={h.id} onClick={() => loadHandset(h)} className="p-3 hover:bg-neutral-800/60 text-sm cursor-pointer flex justify-between">{h.name} <span className="text-neutral-500">${h.price}</span></div>
+                      <div key={h.id} onClick={() => loadHandset(h)} className="p-3 hover:bg-neutral-800/60 text-sm cursor-pointer flex justify-between border-b border-neutral-800/40 last:border-none">
+                        <span>{h.name}</span>
+                        <span className="text-neutral-500">${h.price.toFixed(2)}</span>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -400,7 +412,6 @@ export default function WorkspaceContainer() {
                         <span className="font-mono text-amber-500 font-bold block">${parseFloat(build.total_cost || 0).toFixed(2)}</span>
                         <button 
                           onClick={() => {
-                            // Map existing Postgres relations back to local object matrix configurations
                             const remappedConfig = {
                               case: PARTS_INVENTORY.cases.find(c => c.id === build.case_id) || null,
                               dial: PARTS_INVENTORY.dials.find(d => d.id === build.dial_id) || null,
@@ -412,7 +423,6 @@ export default function WorkspaceContainer() {
                             if (build.hour_angle !== undefined) setHourAngle(build.hour_angle);
                             if (build.minute_angle !== undefined) setMinuteAngle(build.minute_angle);
                             
-                            // Re-render matching canvas vector positions if parts are present
                             if (remappedConfig.case) loadWatchPart('case', remappedConfig.case);
                             if (remappedConfig.movement) loadWatchPart('movement', remappedConfig.movement);
                             if (remappedConfig.dial) loadWatchPart('dial', remappedConfig.dial);
@@ -509,7 +519,7 @@ export default function WorkspaceContainer() {
             
             <div className="flex justify-between items-start print:block">
               <div>
-                <h3 className="text-lg font-bold text-neutral-100 tracking-tight print:text-black print:text-3xl">The Roaming Razor Sourcing Invoice</h3>
+                <h3 className="text-lg font-bold text-neutral-100 tracking-tight print:text-black print:text-3xl">The Watch-Mode-Visualizer Sourcing Invoice</h3>
                 <p className="text-xs text-neutral-500 mt-0.5 print:text-neutral-600">Verified Bench Bill of Materials Checklist</p>
               </div>
               <div className="text-right print:hidden">
