@@ -1,1 +1,16 @@
-Connect to AWS
+Connect to AWS ✅
+
+Browser
+  ↓
+CloudFront (origin group: EC2 primary, S3 fallback secondary)
+  ↓
+EC2 t3 instance
+  ├── FastAPI app (serves API + maybe frontend)
+  ├── MobileSAM model loaded in app (via ultralytics or mobile_sam package)
+  └── Idle-tracking: FastAPI middleware logs last-request time → writes to DynamoDB or local file
+  
+CloudWatch Alarm → watches CPUUtilization/NetworkIn → stops EC2 when idle
+
+API Gateway + Lambda (start function) → triggered by S3 fallback page → starts EC2
+
+S3 bucket → static "waking up" page with polling JS
