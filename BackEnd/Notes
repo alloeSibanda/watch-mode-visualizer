@@ -22,7 +22,7 @@ Health check endpoint: /health — CloudFront/polling page uses this to know whe
 Idle tracking: since MobileSAM inference could take a few seconds, make sure your idle-detection threshold (CPU-based) doesn't accidentally treat "processing a request" as "idle" — CPU-based CloudWatch alarms are actually good here since active inference will show CPU spikes
 CORS: since browser calls FastAPI directly (or via CloudFront), configure CORS properly on the FastAPI side
 
-build order 
+build order ---->
 
 Get FastAPI + MobileSAM running on t3, confirm it works and time the inference 
 Add /health endpoint
