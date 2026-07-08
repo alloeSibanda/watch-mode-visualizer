@@ -1,84 +1,130 @@
 # watch-mode-visualizer
 
-> Interactive web app for the watch modding community — mix and match cases, dials, chapter rings, and hands in real time, with an AI-assisted pipeline that turns a messy smartphone photo of a real part into a clean, transparent layer ready to drop on the canvas.
+> Interactive web app for the watch modding community — mix and match cases, dials, and hands in real time, featuring an on-demand AI pipeline that extracts physical watch components from raw smartphone photos into clean, transparent vector layers.
 
-**Status:** 🚧 In active development. Architecture and CI/CD pipeline below reflect the current build plan; see [Roadmap](#roadmap) for what's live vs. planned.
+**Status:** 🚧 In active development. Architecture and CI/CD pipelines below reflect the active production build plan.
 
 ---
 
-## What it does
+## What It Does
 
-Watch modding (building custom watches from interchangeable parts) is a visual, trial-and-error hobby — people currently do this by eyeballing part photos in image editors or forum threads. This app gives them a real canvas: drag a case, a dial, and a hand set together, see them stack and scale correctly based on real part dimensions (a 30.5mm dial vs a 28.5mm dial renders proportionally differently inside the same case), and iterate in seconds instead of minutes.
+Watch modding (building custom watches from interchangeable components) is a visual, trial-and-error hobby — collectors currently iterate by eyeballing part photos in flat image editors or forum threads. This application provides an authentic, interactive workbench: drag cases, movements, dials, and hands together on an active canvas while calculating running price estimations. Components stack, sort, and scale proportionally based on actual physical dimensions (e.g., auto-scaling a 30.5mm dial vs. a 28.5mm dial accurately inside an identical casing profile).
 
-The differentiator is the upload pipeline: instead of only offering a fixed library of pre-cut part images, a user can photograph their own component at an angle, on a messy background — the backend straightens the perspective and removes the background automatically, turning it into a usable layer.
+The core differentiator is the processing pipeline: instead of offering only a static library of pre-rendered part images, users can upload a real smartphone photo of a component resting on a messy background. The backend flattens perspective warps and executes object segmentation, turning raw photography into an isolated, transparent layer ready for canvas assembly.
 
-## Why this project
+## Why This Project
 
-Watch modding is a personal hobby of mine — I own a fair collection of custom-built watches and have spent a lot of time mixing and matching parts by hand, so this project scratches my own itch as much as anyone else's...
+Watch modding is a personal creative pursuit — building and modding watches requires distinct attention to micro-dimensions, and this project scratches a specific horological itch. 
 
-Professionally, I work in DevOps, and built this to pair infrastructure/CI-CD work with applied AI — specifically computer vision (OpenCV) and a lightweight segmentation model (MobileSAM) running behind a real deployment pipeline, not just a notebook demo. The repo is structured to show both halves: a production-shaped AWS pipeline, and a working ML inference path with real tradeoffs (model size vs. accuracy, sync vs. async processing, GPU cost).
+From an engineering perspective, this platform pairs cloud infrastructure optimization with applied computer vision. It implements an asynchronous machine learning pipeline utilizing a lightweight segmentation model (**MobileSAM**) behind a reactive, cost-optimized deployment pipeline. The repository demonstrates a production-shaped cloud architecture balancing real-world ML tradeoffs: model loading times, CPU memory limitations, and zero-idle hosting methodologies.
 
-## Architecture
+---
+
+## Architecture Matrix
 
 | Layer | Technology | Role |
 |---|---|---|
-| Frontend | React (Vite) | UI shell — sidebar, part library, controls |
-| Canvas | Fabric.js / HTML5 Canvas | Layered, draggable, rotatable, Z-indexed part rendering |
-| Auth | Auth0 *(TBD vs. Cognito)* | User accounts, saved builds |
-| Static hosting | Amazon S3 | Serves compiled React build |
-| Backend API | Python (FastAPI) | Upload handling, orchestrates CV/ML inference |
-| Computer vision | OpenCV | Perspective correction (flattens angled photos) |
-| Segmentation | MobileSAM | Background removal / part isolation |
-| Compute | Amazon EC2 | Hosts FastAPI + CV/ML inference process |
-| Data | PostgreSQL (Supabase) | Part metadata, dimensions, user builds |
+| **Frontend** | React (Vite) + Tailwind CSS | UI workspace shell — sidebar, part library controls, asset loading states |
+| **Canvas Engine** | Fabric.js / HTML5 Canvas | Z-indexed stack rendering, layer sorting, and hand alignment calibration |
+| **Authentication** | Native Supabase Auth | Secure user identity sessions and live portfolio sync profiles |
+| **Static Delivery** | Amazon S3 + CloudFront | Serves compiled React production build bundles across global edge paths |
+| **Backend API** | Python (FastAPI) | Handles payloads, readiness gates, and orchestrates ML inference |
+| **Computer Vision** | OpenCV | Perspective correction matrices (flattens angled photography) |
+| **Segmentation** | MobileSAM (Meta AI) | Edge-point background removal and individual asset isolation |
+| **Compute Core** | Amazon EC2 (`t3.medium`) | Hosts warm FastAPI application runtime processes and PyTorch models |
+| **Data Store** | PostgreSQL (Supabase) | Relational part manifests, physical dimensions, and saved user builds |
 
-### System overview
+### High-Level System Overview
 
-```
 [React + Fabric.js] ──HTTP──► [FastAPI on EC2] ──► [OpenCV: perspective warp]
-        ▲                                                    │
-        │                                          [MobileSAM: background removal]
-        │                                                    │
-        └─────────────── transparent PNG layer ◄─────────────┘
+▲                                                    │
+│                                          [MobileSAM: background removal]
+│                                                    │
+└─────────────── transparent PNG layer ◄─────────────┘
 
-[React] ◄──direct read──► [Supabase Postgres]   (part library, saved builds)
-```
+[React] ◄──Direct Read──► [Supabase Postgres]   (Part Manifests, Saved Portfolio Builds)
 
-### CI/CD pipeline
 
-```
-Local (VS Code) ──git push──► GitHub ──► GitHub Actions (OIDC, no static AWS keys)
-                                              │
-                          ┌───────────────────┴───────────────────┐
-                          ▼                                       ▼
-                  Frontend job                            Backend job
-                  • Build React (Vite)                    • Deploy to EC2
-                  • Sync to S3                             • Restart FastAPI process
-```
+---
 
-Authentication to AWS uses OIDC federation rather than long-lived access keys stored in GitHub secrets — this is the part I'd point to as the actual DevOps content here, distinct from the ML/CV side.
+## 🛠️ Compute-on-Demand AI Infrastructure Automation
 
-## Tech decisions worth calling out
+To completely eliminate idle hosting fees associated with dedicated machine learning servers, the application utilizes an event-driven serverless-to-compute edge bridge. By decoupling the heavy computer vision workloads from continuous billing cycles, the system maintains a **near-zero cost baseline** when inactive, scaling instantly to a warm EC2 instance the moment a user initiates a workshop session.
 
-- **MobileSAM over full SAM** — smaller memory footprint, runs acceptably on a modest EC2 instance instead of requiring a dedicated GPU box, while still handling single-object segmentation well.
-- **EC2, not Lambda, for inference** — OpenCV + MobileSAM benefit from a warm, persistent process; cold-starting a several-hundred-MB model on every request would kill latency and cost.
-- **Supabase Postgres from day one** (not SQLite) — avoids a migration once multiple users are saving builds concurrently.
-- **Manual-assist CV pipeline before full automation** — perspective correction via auto-detected edges and prompt-free segmentation are both real failure-prone problems on reflective metal parts; the first working version uses lightweight user input (tap 4 corners, tap a center point) to make the underlying CV/ML reliable before investing in full automation.
+### Infrastructure Topology
 
-## Roadmap
+              ┌───────────────────────────────┐
+              │ Browser Frontend Client Request│
+              └───────────────┬───────────────┘
+                              │
+                              ▼
+                ┌───────────────────────────┐
+                │  CloudFront Distribution  │
+                └─────────────┬─────────────┘
+                              │
+         ┌────────────────────┴────────────────────┐
+Primary   │ (Active HTTP 200)                       │ Fallback (Timeout 502/503)
+─────────►▼                                         ▼◄────────
+┌───────────────┐                         ┌───────────────┐
+│  EC2 Engine   │                         │   S3 Bucket   │
+│   (FastAPI)   │                         │ (Loading Page)│
+└───────────────┘                         └───────┬───────┘
+│ (Fires background ping)
+▼
+┌───────────────┐
+│  API Gateway  │
+└───────┬───────┘
+│ (Invokes)
+▼
+┌───────────────┐
+│ AWS Lambda    │
+└───────┬───────┘
+│ (Starts Node)
+▼
+┌───────────────┐
+│  EC2 Node On  │
+└───────────────┘
 
-- [ ] Canvas core — drag, rotate, scale, Z-index stacking
-- [ ] Part library + dimension-aware scaling
-- [ ] Auth + save/load builds
-- [ ] AI upload pipeline (v1: manual-assist perspective + segmentation)
-- [ ] AI upload pipeline (v2: automated detection)
-- [ ] CI/CD pipeline (GitHub Actions → S3 + EC2 via OIDC)
-- [ ] Affiliate links / monetization layer.
 
-## Local development
+### End-to-End Execution Lifecycle
 
-*(to be filled in once the frontend scaffold exists)*
+1. **Cold State & Traffic Interception** The AI backend resides in a **Stopped** power state on an AWS EC2 instance running Ubuntu Server 24.04 LTS, accruing zero runtime compute fees. When a browser initiates a request to the `/api/*` path behavior, the global **AWS CloudFront Distribution** attempts to establish a gateway connection with the primary EC2 compute origin.
+2. **Serverless Failover Routing & Lambda Awakening** Upon tracking an unreachable gateway timeout (`502/503/504 Error`), CloudFront executes an **Origin Group Failover Policy**. Traffic instantly shifts to a secondary static **S3 Fallback Bucket** serving an optimized, dark-themed loading interface. Upon initial render, this page dispatches an asynchronous background ping against an **AWS API Gateway**, invoking an **AWS Lambda Python function** configured with scoped IAM permissions to execute an operational `ec2:StartInstances` command.
+3. **Singleton Model Serialization & Readiness Hooking** While the virtual machine boots, the loading page continuously polls the backend’s `/api/health` path. To maximize performance on standard CPU hardware, the backend **FastAPI** application encapsulates the heavy MobileSAM weight matrices within an asynchronous **Singleton Lifespan Handler**. The model weights are loaded into RAM exactly *once* during Uvicorn initialization. The readiness probe returns a strict `503 Service Unavailable` status until serialization concludes, switching to an HTTP `200 OK` only when the model is ready for matrix inference. The polling client intercepts this status flip and forces a browser hard reload to establish a direct workspace connection.
+4. **Automated CloudWatch Idle-Teardown** An **AWS CloudWatch Metric Alarm** monitors performance metrics to spin down infrastructure safely when a session ends. The alarm evaluates the **`Maximum CPUUtilization`** across a rolling 15-minute window (3 consecutive 5-minute evaluation stages). If maximum CPU metrics stay entirely **below 5%**—indicating user interaction has ceased and the browser workspace has closed—CloudWatch executes an administrative stop policy, parking the server back down to its zero-billing resting layer.
+
+---
+
+## CI/CD Pipeline Lifecycle
+
+Local Workspace ──git push──► GitHub Repository ──► GitHub Actions (OIDC Federation)
+│
+┌───────────────────────────┴───────────────────────────┐
+▼                                                       ▼
+Frontend Pipeline                                       Backend Pipeline
+• Compile Production Assets (Vite)                      • Push Source to EC2
+• Sync Build Matrix to Amazon S3                        • Refresh Uvicorn ASGI Process
+
+
+Authentication to AWS utilizes **OIDC Federation** roles rather than long-lived, static access keys stored inside GitHub Secrets, ensuring compliance with modern DevSecOps identity rotation principles.
+
+## Engineering Decisions & Tradeoffs
+
+- **MobileSAM over Full SAM Matrix:** MobileSAM delivers a dramatically condensed memory footprint, allowing it to execute inference quickly within a cost-effective CPU compute layer rather than requiring dedicated GPU acceleration instances.
+- **EC2 vs. Pure Lambda for Inference Pipelines:** OpenCV data transformations combined with model initialization processes benefit from a persistent process memory space. Cold-starting multiple megabytes of deep learning model layers inside an ephemeral Lambda execution context would crivel user response latency and incur massive runtime execution timeouts.
+- **Supabase PostgreSQL from Day One:** Choosing a relational engine over simple client-side files avoids data-layer migration paths when multiple concurrent users store custom watch assembly dimensions or synchronize portfolios simultaneously.
+- **Manual-Assist CV Input Processing:** Fully automated edge detection can fail on highly reflective brushed steel and sapphire surfaces. Version 1 utilize manual user anchor constraints (taping casing corners and dial center points) to establish reliable perspective flattens before executing the underlying machine learning layers.
+
+## Project Roadmap
+
+- [x] Canvas core mechanics — drag, scale, rotate, and layer stack sorting
+- [x] Part inventory dictionary matrix + dimension-proportional vector scaling
+- [x] Native Supabase Auth session states + live Postgres portfolio synchronization
+- [x] Compute-on-Demand serverless awakening infrastructure loop and CloudWatch idle-teardown
+- [ ] AI image processing pipeline integration (v1: Manual-assist perspective correction + background segmentation)
+- [ ] AI image processing pipeline optimization (v2: Full edge-detection automation)
+- [ ] GitHub Actions OIDC deployment pipelines for automated S3 and EC2 synchronizations
 
 ## License
 
-*(choose one — MIT is the common default for portfolio projects)*
+This project is licensed under the terms of the **MIT License**.
