@@ -36,3 +36,6 @@ Origin 1 (primary): your EC2/ALB origin
 Origin 2 (fallback): the S3 bucket
 Failover criteria: 500, 502, 503, 504
 Important: set custom error response TTL low (0-10s) for those status codes so CloudFront doesn't cache the failure and keep serving stale "down" responses once the instance is back
+
+
+build order ---->
