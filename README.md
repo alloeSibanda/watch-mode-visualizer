@@ -42,7 +42,7 @@ From an engineering perspective, this platform pairs cloud infrastructure optimi
 │                                                    │
 └─────────────── transparent PNG layer ◄─────────────┘
 
-[React] ◄──Direct Read──► [Supabase Postgres]   (Part Manifests, Saved Portfolio Builds)
+[React] ◄──Direct Read──► [Supabase Postgres]   (Part Manifests, Saved Portfolio Builds).
 
 
 ---
