@@ -52,6 +52,9 @@ export default function WorkspaceContainer() {
   const [savedBuilds, setSavedBuilds] = useState([]);
   const [isLoadingBuilds, setIsLoadingBuilds] = useState(false);
 
+  // 🤖 AI Inference Execution State Hook
+  const [isSegmenting, setIsSegmenting] = useState(false);
+
   const caseLayerRef = useRef(null);
   const dialLayerRef = useRef(null);
   const movementLayerRef = useRef(null);
@@ -264,6 +267,56 @@ export default function WorkspaceContainer() {
     }
   };
 
+  // 🤖 Asynchronous Cross-Network Image Upload Handler for AI Microservice
+  const handleWatchImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file || !fabricCanvas) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsSegmenting(true);
+    try {
+      // 🚀 Replace the IP placeholder below with your running EC2 Public IPv4 address
+      const response = await fetch('http://YOUR_EC2_PUBLIC_IP:8000/api/v1/segment', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('AI Engine segmentation network channel rejection.');
+      const data = await response.json();
+
+      if (data.contour_polygon && data.contour_polygon.length > 0) {
+        // Map native coordinate structures into Fabric layout vectors
+        const fabricPoints = data.contour_polygon.map(pt => ({ x: pt.x, y: pt.y }));
+        
+        const extractedLayer = new fabric.Polygon(fabricPoints, {
+          left: 80,
+          top: 80,
+          fill: 'rgba(245, 158, 11, 0.25)', // Translucent amber overlay highlight tint
+          stroke: '#f59e0b',
+          strokeWidth: 2,
+          selectable: true,
+          hasControls: true
+        });
+
+        fabricCanvas.add(extractedLayer);
+        fabricCanvas.setActiveObject(extractedLayer);
+        fabricCanvas.centerObject(extractedLayer);
+        fabricCanvas.renderAll();
+        
+        alert(`Successfully extracted watch component layer geometry (${data.points_count} coordinates parsed)!`);
+      } else {
+        alert('MobileSAM inference complete, but zero distinctive component edges were found.');
+      }
+    } catch (error) {
+      console.error('Extraction bridge link link exception:', error);
+      alert('Failed to connect to the cloud machine learning endpoint. Ensure EC2 is listening.');
+    } finally {
+      setIsSegmenting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col relative overflow-x-hidden print:bg-white print:text-black">
       <main className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-6 p-4 md:p-8 max-w-7xl w-full mx-auto print:p-0 print:block">
@@ -305,6 +358,27 @@ export default function WorkspaceContainer() {
                   <button onClick={() => setIsAuthModalOpen(true)} className="bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-neutral-950 font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all shadow-md">
                     Connect Workbench
                   </button>
+                )}
+              </div>
+            </div>
+
+            {/* 🤖 AI Automated Sourcing Extraction Tool Panel */}
+            <div className="border-b border-neutral-800/80 pb-4 mb-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 block mb-1.5">AI Visual Extractor (Beta)</span>
+              <div className="bg-neutral-950 border border-neutral-800/60 rounded-xl p-3 flex flex-col items-start gap-2">
+                <p className="text-[11px] text-neutral-400">Upload a raw watch layout photo to isolate bezels, cases, or custom dials via MobileSAM machine learning layers.</p>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  disabled={isSegmenting}
+                  onChange={handleWatchImageUpload}
+                  className="text-xs text-neutral-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500/10 file:text-amber-500 hover:file:bg-amber-500/20 file:cursor-pointer cursor-pointer disabled:opacity-40 w-full"
+                />
+                {isSegmenting && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                    <span className="text-[10px] text-amber-500/90 font-mono animate-pulse">Running MobileSAM inference arrays on EC2 node...</span>
+                  </div>
                 )}
               </div>
             </div>
