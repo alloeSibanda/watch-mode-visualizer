@@ -39,3 +39,5 @@ Important: set custom error response TTL low (0-10s) for those status codes so C
 
 
 build order ---->
+Troubleshoot watch-mode-visualizer-wake-api
+CloudFront. --> Failed to connect to the cloud machine learning endpoint. Ensure EC2 is listening.
